@@ -1,0 +1,50 @@
+
+#oldconfig
+#CC = gcc
+#DEFS = -D_XOPEN_SOURCE=500 -D_DEFAULT_SOURCE
+#LIBS = edit ncurses
+#CFLAGS = -Wall -g -std=c99 -pedantic -DENDEBUG $(DEFS) $(addprefix -l,$(LIBS))
+#LDFLAGS = $(DEFS) $(addprefix -l,$(LIBS))
+
+CC = @CC@
+LIBS = @LIBS@
+CFLAGS = @CFLAGS@ -Wall -pedantic -DENDEBUG
+LDFLAGS = @LDFLAGS@
+
+MKDIR = mkdir -p
+
+SRCDIR = src
+BUILDDIR = build
+BINDIR = bin
+
+.PHONY: all clean
+
+all: gosh
+
+gosh: $(BINDIR)/gosh
+
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+	$(MKDIR) $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BINDIR)/gosh: $(BUILDDIR)/main.o $(BUILDDIR)/global.o $(BUILDDIR)/cli.o $(BUILDDIR)/interpreter/interpreter.o $(BUILDDIR)/interpreter/splitter.o $(BUILDDIR)/interpreter/builtin.o $(BUILDDIR)/interpreter/built-in/cd.o
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+$(BUILDDIR)/main.o: $(SRCDIR)/main.c $(SRCDIR)/global.h $(SRCDIR)/cli.h $(SRCDIR)/interpreter/interpreter.h
+$(BUILDDIR)/global.o: $(SRCDIR)/global.c $(SRCDIR)/global.h
+$(BUILDDIR)/cli.o: $(SRCDIR)/cli.c $(SRCDIR)/global.h $(SRCDIR)/cli.h $(SRCDIR)/interpreter/interpreter.h
+
+$(BUILDDIR)/interpreter/interpreter.o: $(SRCDIR)/interpreter/interpreter.c $(SRCDIR)/global.h $(SRCDIR)/interpreter/interpreter.h $(SRCDIR)/interpreter/splitter.h
+$(BUILDDIR)/interpreter/splitter.o: $(SRCDIR)/interpreter/splitter.c $(SRCDIR)/global.h $(SRCDIR)/interpreter/splitter.h
+$(BUILDDIR)/interpreter/builtin.o: $(SRCDIR)/interpreter/builtin.c $(SRCDIR)/interpreter/built-in/builtin.h $(SRCDIR)/global.h $(SRCDIR)/interpreter/interpreter.h
+
+$(BUILDDIR)/interpreter/built-in/cd.o: $(SRCDIR)/interpreter/built-in/cd.c $(SRCDIR)/interpreter/built-in/builtin.h
+
+clean:
+	find $(BUILDDIR) -iname "*.o" -delete
+	rm -f $(BINDIR)/gosh
+
+# clean autoconf files
+mr-propper: clean
+	rm config.status
+	rm config.log
